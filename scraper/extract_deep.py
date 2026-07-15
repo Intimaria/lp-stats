@@ -56,25 +56,41 @@ def normalise_contract_type(text):
 
 # ── Bidder / company extraction ───────────────────────────────────────────────
 
+# ﬁrma ligature (U+FB01) normalised to "firma" before regex matching
+def _norm(text):
+    return text.replace("ﬁ", "fi")
+
+NAME_PAT = r"([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ0-9\s\.,&\-]{2,60}?(?:S\.?R\.?L\.?|S\.?A\.?S?\.?|S\.?C\.?|S\.?A\.?C\.?|SRL|SA)\b)"
+NAME_PAT_FREE = r"([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ0-9\s\.,&\-]{3,60}?)"
+
 # "Perteneciente a la Firma X" / "Pertenece a la Firma X"
 BIDDER_RE = re.compile(
-    r"[Pp]ertenec(?:iente|e)\s+a\s+la\s+[Ff]irma\s+([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ0-9\s\.,&\-]{3,60}?)"
+    r"[Pp]ertenec(?:iente|e)\s+a\s+la\s+firma\s+" + NAME_PAT_FREE +
     r"(?:\s+quien|\s+la\s+cual|\s*,|\s+por|\n)",
     re.I,
 )
 
-# "a la firma X" / "a favor de X" after adjudícase
-ADJUDICA_TO_RE = re.compile(
-    r"adjudic[aá]se?\s+(?:a\s+(?:favor\s+de\s+)?)?(?:la\s+[Ff]irma\s+)?"
-    r"([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ0-9\s\.,&\-]{3,60}?)"
-    r"(?:\s+(?:por|la|el|para|los|las)\b|\s*,|\s*\n)",
+# "a la firma X" / "a favor de la firma X" (standalone, anywhere in block)
+FIRMA_RE = re.compile(
+    r"(?:a\s+(?:favor\s+de\s+)?(?:la\s+)?firma[:\s]+)" + NAME_PAT,
     re.I,
 )
 
-# "la más conveniente" / "la mejor oferta" → what comes before is the winner
+# "adjudicatari[ao] es la firma X" / "adjudicataria: X"
+ADJUDICATARIA_RE = re.compile(
+    r"adjudicatari[ao]\s+(?:es\s+la\s+firma[:\s]+|:\s*)" + NAME_PAT,
+    re.I,
+)
+
+# "adjudícase a la firma X" (subjunctive form)
+ADJUDICA_TO_RE = re.compile(
+    r"adjudic[aá]se?\s+(?:a\s+(?:favor\s+de\s+)?)?(?:la\s+firma[:\s]+)?" + NAME_PAT,
+    re.I,
+)
+
+# Company name anchored by legal suffix, preceded by "la firma" context
 WINNER_RE = re.compile(
-    r"([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ0-9\s\.,&\-]{3,60}?)"
-    r"\s+(?:resulta ser|es la\s+)?(?:la más conveniente|la mejor oferta|resulta ser la más|resulta ser la mejor)",
+    r"(?:la\s+firma[:\s]+|perteneciente\s+a\s+(?:la\s+)?firma\s+)" + NAME_PAT,
     re.I,
 )
 
@@ -233,6 +249,8 @@ def extract_adjudicacion_doc(block, bulletin_meta):
     if not re.search(r"adjudic", block, re.I):
         return None
 
+    block = _norm(block)
+
     m = DOC_NUM_RE.search(block)
     doc_number = m.group(1).strip() if m else None
 
@@ -253,15 +271,18 @@ def extract_adjudicacion_doc(block, bulletin_meta):
     # All bidders
     bidders = [m.group(1).strip().rstrip(".,") for m in BIDDER_RE.finditer(block)]
 
-    # Winner
+    # Winner — try each pattern in priority order
     winner = None
-    m = WINNER_RE.search(block)
-    if m:
-        winner = m.group(1).strip().rstrip(".,")
-    if not winner:
-        m = ADJUDICA_TO_RE.search(block)
+    for pat in (ADJUDICATARIA_RE, ADJUDICA_TO_RE, FIRMA_RE, WINNER_RE):
+        m = pat.search(block)
         if m:
-            winner = m.group(1).strip().rstrip(".,")
+            candidate = m.group(1).strip().rstrip(".,")
+            if not re.search(r"\b(menor precio|conveniente|mejor oferta|resulta)\b", candidate, re.I):
+                winner = candidate
+                break
+    # If still no winner and only one bidder, that bidder is the winner
+    if not winner and len(bidders) == 1:
+        winner = bidders[0]
 
     # Amounts — try to get the winning amount (last/largest $ near winner)
     amounts = []
