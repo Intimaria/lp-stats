@@ -2,6 +2,7 @@
 import altair as alt
 import streamlit as st
 from app.db import get_contrataciones_por_año, get_montos_por_año, get_pct_directa_por_año
+from app.ipc import deflactar, get_ipc_anual
 
 COLORES = {
     "Licitación pública":   "#2C7BB6",
@@ -134,28 +135,50 @@ La ley establece cuándo se requiere licitación pública, privada o concurso de
     st.markdown(
         "Solo las **licitaciones públicas** publican el monto en el texto del boletín. "
         "El resto — contrataciones directas, licitaciones privadas, concursos — "
-        "no incluye el importe adjudicado. Los valores están en pesos nominales."
+        "no incluye el importe adjudicado."
     )
 
     df_montos = get_montos_por_año(db_path)
-    total_mm = df_montos["total_miles_millones"].sum()
+    ipc = get_ipc_anual()
+    ref_year = max(ipc.keys())
+    deflactar(df_montos, "total_miles_millones", "total_real_mm", ipc, ref_year)
+
+    nominal = st.checkbox("Ver valores nominales (sin ajuste por inflación)", value=False)
+    y_col = "total_miles_millones" if nominal else "total_real_mm"
+    y_label = "Miles de millones de pesos (nominal)" if nominal else f"Miles de millones de pesos ({ref_year})"
+    tooltip_extra = (
+        [alt.Tooltip("total_miles_millones:Q", title="Nominal ($M)", format=".1f")]
+        if not nominal else []
+    )
 
     bar_montos = (
         alt.Chart(df_montos)
         .mark_bar(color="#2C7BB6")
         .encode(
             x=alt.X("year:O", title="Año", axis=alt.Axis(labelAngle=0)),
-            y=alt.Y("total_miles_millones:Q", title="Miles de millones de pesos (nominal)"),
+            y=alt.Y(f"{y_col}:Q", title=y_label),
             tooltip=[
                 alt.Tooltip("year:O", title="Año"),
                 alt.Tooltip("contratos:Q", title="Licitaciones con monto"),
-                alt.Tooltip("total_miles_millones:Q", title="Miles de millones $", format=".1f"),
+                alt.Tooltip(f"{y_col}:Q", title="Miles de millones $", format=".1f"),
+                *tooltip_extra,
             ],
         )
         .properties(height=320)
     )
     st.altair_chart(bar_montos, use_container_width=True)
-    st.caption(
-        f"Total registrado 2018–2026: **${total_mm:,.0f} miles de millones** en licitaciones públicas con monto publicado. "
-        "No incluye contrataciones directas ni licitaciones privadas."
-    )
+
+    total_nominal = df_montos["total_miles_millones"].sum()
+    total_real = df_montos["total_real_mm"].sum()
+    if nominal:
+        st.caption(
+            f"Total nominal 2018–2026: **${total_nominal:,.0f} miles de millones**. "
+            "Los valores no son comparables entre años por la inflación."
+        )
+    else:
+        st.caption(
+            f"Total en pesos constantes de {ref_year}: **${total_real:,.0f} miles de millones** "
+            f"(equivalente nominal: ${total_nominal:,.0f} MM). "
+            f"Deflactado con IPC INDEC (base dic 2016). "
+            "Solo licitaciones públicas con monto publicado."
+        )
