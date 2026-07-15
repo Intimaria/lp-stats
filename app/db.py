@@ -120,6 +120,21 @@ def get_inmuebles_ops(db_path: str) -> pd.DataFrame:
     return df
 
 
+def get_inmuebles_con_beneficiario(db_path: str) -> pd.DataFrame:
+    con = _connect(db_path)
+    df = con.execute("""
+        SELECT year, doc_number,
+               array_to_string(operations, ', ') AS operacion,
+               beneficiario, direccion,
+               bulletin_id
+        FROM inmuebles
+        WHERE len(operations) > 0 AND beneficiario IS NOT NULL
+        ORDER BY year DESC
+    """).df()
+    con.close()
+    return df
+
+
 def get_inmuebles_por_año_y_tipo(db_path: str) -> pd.DataFrame:
     con = _connect(db_path)
     df = con.execute("""

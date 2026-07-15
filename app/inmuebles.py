@@ -1,6 +1,7 @@
 import streamlit as st
 import altair as alt
-from app.db import get_inmuebles_por_año_y_tipo
+import pandas as pd
+from app.db import get_inmuebles_por_año_y_tipo, get_inmuebles_con_beneficiario
 
 GLOSARIO = {
     "desafecta": (
@@ -52,10 +53,9 @@ Cada operación debe publicarse en el boletín oficial. Entre 2018 y 2026 hay **
 """)
 
     st.warning(
-        "**El 89% de los registros está en páginas escaneadas del boletín.** "
-        "El municipio publicó el detalle, pero en formato imagen — aún no lo procesamos. "
-        "Lo que se muestra abajo es el registro de que *algo ocurrió*; el tipo de operación, "
-        "en la mayoría de los casos, está pendiente de extracción."
+        "**El 80% de los registros aún no tiene tipo de operación extraído.** "
+        "El municipio publicó el detalle en el boletín, pero en formatos que el sistema "
+        "aún no puede leer completamente. El trabajo de extracción continúa."
     )
 
     df = get_inmuebles_por_año_y_tipo(db_path)
@@ -91,6 +91,26 @@ Cada operación debe publicarse en el boletín oficial. Entre 2018 y 2026 hay **
         "Gris = registro sin tipo identificable. Rojo = escritura (transferencia de dominio). "
         "Amarillo = desafectación (retiro de protección pública)."
     )
+
+    st.divider()
+    st.subheader("Operaciones con beneficiario identificado")
+    st.caption(
+        "Registros donde el sistema pudo extraer automáticamente el tipo de operación "
+        "y el receptor del inmueble. Dato aproximado — puede contener errores de extracción."
+    )
+    df_ben = get_inmuebles_con_beneficiario(db_path)
+    if len(df_ben) > 0:
+        SIBOM_BASE = "https://sibom.slyt.gba.gob.ar/bulletins"
+        df_ben["boletín"] = df_ben["bulletin_id"].apply(
+            lambda bid: f"[ver ↗]({SIBOM_BASE}/{bid})"
+        )
+        display = df_ben[["year", "operacion", "beneficiario", "direccion", "boletín"]].rename(columns={
+            "year": "Año", "operacion": "Operación",
+            "beneficiario": "Beneficiario", "direccion": "Dirección", "boletín": "Fuente",
+        })
+        st.dataframe(display, use_container_width=True, hide_index=True)
+    else:
+        st.caption("Sin datos disponibles.")
 
     st.divider()
     st.subheader("Por qué importa")
