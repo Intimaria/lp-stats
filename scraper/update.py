@@ -12,17 +12,26 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
-# Ensure project root is on sys.path when run as a script or via -m
-_ROOT = Path(__file__).parent.parent
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
+_HERE = Path(__file__).parent
+_ROOT = _HERE.parent
+for _p in (str(_ROOT), str(_HERE)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-from scraper.parse_bulletins import parse_bulletin
-from scraper.extract_deep import (
-    extract_adjudicacion_doc,
-    extract_inmueble_doc,
-    split_text_into_docs,
-)
+try:
+    from scraper.parse_bulletins import parse_bulletin
+    from scraper.extract_deep import (
+        extract_adjudicacion_doc,
+        extract_inmueble_doc,
+        split_text_into_docs,
+    )
+except ImportError:
+    from parse_bulletins import parse_bulletin  # type: ignore
+    from extract_deep import (  # type: ignore
+        extract_adjudicacion_doc,
+        extract_inmueble_doc,
+        split_text_into_docs,
+    )
 
 BASE_URL = "https://sibom.slyt.gba.gob.ar"
 CITY_ID = 66
