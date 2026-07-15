@@ -86,11 +86,11 @@ La ley establece cuándo se requiere licitación pública, privada o concurso de
 
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Gestión Garro (2019–2023)", f"{garro:.0f}%",
+        st.metric("Gestión anterior (2019–2023)", f"{garro:.0f}%",
                   help="Promedio anual de contratos adjudicados sin proceso licitatorio")
         st.caption("Promedio de contratos sin licitación por año")
     with col2:
-        st.metric("Gestión Alak (2024–hoy)", f"{alak:.0f}%",
+        st.metric("Gestión actual (2024–hoy)", f"{alak:.0f}%",
                   delta=f"+{alak - garro:.0f} puntos",
                   delta_color="inverse",
                   help="Promedio anual de contratos adjudicados sin proceso licitatorio")
