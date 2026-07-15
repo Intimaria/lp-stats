@@ -1,9 +1,15 @@
 import streamlit as st
 import altair as alt
 import pandas as pd
-from app.db import get_inmuebles_por_año_y_tipo, get_inmuebles_con_beneficiario
+from app.db import get_inmuebles_resumen, get_inmuebles_por_año_y_tipo, get_inmuebles_con_beneficiario
 
 GLOSARIO = {
+    "prescripción": (
+        "El municipio adquiere un inmueble abandonado por prescripción administrativa: "
+        "cuando un propietario no paga tasas durante años o abandona el bien, "
+        "el Estado puede declarar que el inmueble pasa a su dominio. "
+        "Es la forma en que el municipio recupera terrenos para uso público."
+    ),
     "desafecta": (
         "Saca el inmueble del catálogo de bienes públicos protegidos. "
         "Es el paso previo a cualquier venta, cesión o cambio de uso. "
@@ -34,6 +40,7 @@ GLOSARIO = {
 
 COLORES = {
     "Sin detalle publicado": "#BDBDBD",
+    "prescripción":          "#7B2D8B",
     "escritura":             "#D73027",
     "donación":              "#FC8D59",
     "desafecta":             "#FEE090",
@@ -47,16 +54,22 @@ COLORES = {
 
 def render(db_path: str) -> None:
     st.header("Suelo público — ¿qué hace el municipio con sus inmuebles?")
-    st.markdown("""
+
+    resumen = get_inmuebles_resumen(db_path)
+    total = resumen["total"]
+    pct_sin = int(resumen["pct_sin_tipo"])
+
+    st.markdown(f"""
 El municipio puede ceder, escriturar, desafectar o transferir inmuebles mediante decreto.
-Cada operación debe publicarse en el boletín oficial. Entre 2018 y 2026 hay **142 registros de operaciones sobre suelo público**.
+Cada operación debe publicarse en el boletín oficial. Entre 2018 y 2026 hay **{total} registros de operaciones sobre suelo público**.
 """)
 
-    st.warning(
-        "**El 13% de los registros aún no tiene tipo de operación extraído.** "
-        "El municipio publicó el detalle en el boletín, pero en formatos que el sistema "
-        "aún no puede leer completamente."
-    )
+    if pct_sin > 0:
+        st.warning(
+            f"**El {pct_sin}% de los registros aún no tiene tipo de operación extraído.** "
+            "El municipio publicó el detalle en el boletín, pero en formatos que el sistema "
+            "aún no puede leer completamente."
+        )
 
     df = get_inmuebles_por_año_y_tipo(db_path)
 

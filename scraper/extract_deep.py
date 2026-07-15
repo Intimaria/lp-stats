@@ -118,7 +118,7 @@ DOC_DATE_RE = re.compile(
 
 # ── Inmueble patterns ─────────────────────────────────────────────────────────
 
-INMUEBLE_RE = re.compile(r"\binmueble\b|\bparcela\b|\bterreno\b|\bdominio\b", re.I)
+INMUEBLE_RE = re.compile(r"\binmuebles?\b|\bparcelas?\b|\bterrenos?\b|\bdominio\b", re.I)
 
 # A block must match at least one of these to be kept as an inmueble record
 INMUEBLE_STRONG_RE = re.compile(
@@ -126,12 +126,14 @@ INMUEBLE_STRONG_RE = re.compile(
     r"|bien\s+inmueble|inmueble\s+municipal|inmueble\s+(?:fiscal|del\s+estado)"
     r"|[Cc]at[aá]logo\s+de\s+[Bb]ienes|espacio\s+verde"
     r"|[Bb]ien(?:es)?\s+(?:del\s+municipio|municipales?|fiscales?)"
-    r"|[Cc]ircunscripci[oó]n\s+[IVXL\d]",
+    r"|[Cc]ircunscripci[oó]n\s+[IVXL\d]"
+    r"|prescripci[oó]n\s+administrativa",
     re.I,
 )
 
 INMUEBLE_OP_RE = re.compile(
-    r"\b(desafectaci[oó]n|desaf[eé]ct[aáeé](?:se?|ndo|n(?:se)?)?|desafecta"
+    r"\b(prescripci[oó]n\s+administrativa"
+    r"|desafectaci[oó]n|desaf[eé]ct[aáeé](?:se?|ndo|n(?:se)?)?|desafecta"
     r"|cesi[oó]n(?:\s+de\s+uso)?|cedido|cede|c[eé]d[ao]se?"
     r"|escritura\s+traslativa|escritura[rs]?|escriturar|escrituraci[oó]n|escritúrese?"
     r"|comodato"
@@ -139,7 +141,7 @@ INMUEBLE_OP_RE = re.compile(
     r"|permuta"
     r"|adjudicaci[oó]n|adjudica"
     r"|transferencia(?:\s+de\s+dominio)?|transfi[eé]r[ae]se?"
-    r"|otorg(?:a(?:se?|miento|ndo)?|amiento|[uú]ese?))\b",
+    r"|otorg(?:a(?:s[eé]?|miento|ndo)?|amiento|[uú]ese?))\b",
     re.I,
 )
 
@@ -207,6 +209,8 @@ def normalize_op(raw: str) -> str:
     r = (raw.lower()
          .replace("ó","o").replace("á","a").replace("é","e")
          .replace("í","i").replace("ú","u").strip())
+    if r.startswith("prescripci"):
+        return "prescripción"
     if r.startswith("desafect"):
         return "desafecta"
     if r.startswith("cesi") or r in ("cedido", "cede"):
@@ -332,6 +336,12 @@ def extract_inmueble_doc(block, bulletin_meta):
             direccion += f" Nº {numero}"
         if entre:
             direccion += f" e/ {entre}"
+
+    # All official documents (Decretos, Ordenanzas, Resoluciones) start with a header that
+    # includes "La Plata, DD de Mes de AAAA". Fragments cited inside larger docs (e.g.
+    # "Ordenanza N°10.703, que no se encuentren...") or fee tables don't have this near the start.
+    if not re.search(r"La Plata,\s+\d", block[:400], re.I):
+        return None
 
     # Drop records where "inmueble" appears only in passing (vehicle damage, parking, etc.)
     if not ops and not circ and not INMUEBLE_STRONG_RE.search(block):

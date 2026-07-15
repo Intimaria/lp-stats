@@ -97,6 +97,17 @@ def get_empresas_stats(db_path: str) -> dict:
     return {"sin_empresa": sin_empresa, "total": total, "top_empresas": top}
 
 
+def get_inmuebles_resumen(db_path: str) -> dict:
+    con = _connect(db_path)
+    row = con.execute("""
+        SELECT COUNT(*),
+               COUNT(*) FILTER (WHERE len(operations) = 0) * 100.0 / COUNT(*)
+        FROM inmuebles
+    """).fetchone()
+    con.close()
+    return {"total": int(row[0]), "pct_sin_tipo": round(row[1], 0)}
+
+
 def get_inmuebles_por_año(db_path: str) -> pd.DataFrame:
     con = _connect(db_path)
     df = con.execute("""

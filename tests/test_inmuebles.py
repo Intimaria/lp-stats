@@ -21,4 +21,4 @@ def test_inmuebles_por_año_y_tipo_shape():
     assert "cantidad" in df.columns
     assert "Sin detalle publicado" in df["operacion"].values
     total = df["cantidad"].sum()
-    assert total >= 142  # genuine property operations only
+    assert total >= 154  # genuine property operations only
