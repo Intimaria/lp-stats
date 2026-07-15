@@ -64,36 +64,39 @@ Esto incluye casi todos los contratos sin licitación.
 
     st.divider()
     st.subheader("Las empresas que sí aparecen")
-    st.caption(
-        f"Solo {con_empresa:,} contratos publican el adjudicatario. "
-        "El grueso de las contrataciones directas no está incluido."
+    st.markdown(
+        "Solo las **licitaciones públicas** publican el adjudicatario con regularidad. "
+        "Ordenadas por monto total adjudicado en pesos nominales."
     )
 
     if len(top) > 0:
         top["años_activos"] = top["años"].apply(
             lambda ys: " · ".join(str(y) for y in sorted(ys)) if ys is not None and len(ys) > 0 else ""
         )
+        top["total_millones"] = top["total_millones"].fillna(0).astype(int)
 
         bar = (
             alt.Chart(top)
             .mark_bar(color="#2C7BB6")
             .encode(
-                x=alt.X("contratos:Q", title="Contratos publicados"),
+                x=alt.X("total_millones:Q", title="Millones de pesos adjudicados (nominal)"),
                 y=alt.Y("empresa:N", sort="-x", title=""),
                 tooltip=[
                     alt.Tooltip("empresa:N", title="Empresa"),
-                    alt.Tooltip("contratos:Q", title="Contratos"),
-                    alt.Tooltip("años_activos:N", title="Años con contratos"),
+                    alt.Tooltip("contratos:Q", title="Licitaciones"),
+                    alt.Tooltip("total_millones:Q", title="Millones $", format=","),
+                    alt.Tooltip("años_activos:N", title="Años"),
                 ],
             )
             .properties(height=420)
         )
         st.altair_chart(bar, use_container_width=True)
 
-        display = top[["empresa", "contratos", "años_activos"]].rename(columns={
+        display = top[["empresa", "contratos", "total_millones", "años_activos"]].rename(columns={
             "empresa": "Empresa",
-            "contratos": "Contratos",
-            "años_activos": "Años con contratos",
+            "contratos": "Licitaciones",
+            "total_millones": "Total (millones $)",
+            "años_activos": "Años",
         })
         st.dataframe(display, use_container_width=True, hide_index=True)
 

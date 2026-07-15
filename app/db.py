@@ -73,6 +73,23 @@ def get_contrataciones_por_año(db_path: str) -> pd.DataFrame:
     return df_long[["year", "tipo", "cantidad"]].copy()
 
 
+def get_montos_por_año(db_path: str) -> pd.DataFrame:
+    con = _connect(db_path)
+    df = con.execute("""
+        SELECT year,
+               COUNT(*) AS contratos,
+               ROUND(SUM(awarded_amount) / 1e9, 2) AS total_miles_millones
+        FROM adjudicaciones
+        WHERE contract_type = 'licitacion_publica'
+          AND awarded_amount IS NOT NULL
+          AND year IS NOT NULL
+        GROUP BY year
+        ORDER BY year
+    """).df()
+    con.close()
+    return df
+
+
 def get_empresas_stats(db_path: str) -> dict:
     con = _connect(db_path)
     row = con.execute("""
@@ -86,11 +103,13 @@ def get_empresas_stats(db_path: str) -> dict:
     top = con.execute("""
         SELECT winner AS empresa,
                COUNT(*) AS contratos,
+               ROUND(SUM(awarded_amount) / 1e6, 0) AS total_millones,
                list(DISTINCT year ORDER BY year) AS años
         FROM adjudicaciones
         WHERE winner IS NOT NULL AND winner != ''
+          AND contract_type = 'licitacion_publica'
         GROUP BY winner
-        ORDER BY contratos DESC
+        ORDER BY total_millones DESC NULLS LAST
         LIMIT 20
     """).df()
     con.close()

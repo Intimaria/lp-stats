@@ -1,7 +1,7 @@
 # app/contrataciones.py
 import altair as alt
 import streamlit as st
-from app.db import get_contrataciones_por_año
+from app.db import get_contrataciones_por_año, get_montos_por_año
 
 COLORES = {
     "Licitación pública":   "#2C7BB6",
@@ -75,4 +75,35 @@ La ley establece cuándo se requiere licitación pública, privada o concurso de
     st.caption(
         "**Sin clasificar:** contratos donde el boletín no publica suficiente texto "
         "para identificar el tipo — el detalle está en el anexo escaneado del decreto."
+    )
+
+    st.divider()
+    st.subheader("¿Cuánto se adjudicó?")
+    st.markdown(
+        "Solo las **licitaciones públicas** publican el monto en el texto del boletín. "
+        "El resto — contrataciones directas, licitaciones privadas, concursos — "
+        "no incluye el importe adjudicado. Los valores están en pesos nominales."
+    )
+
+    df_montos = get_montos_por_año(db_path)
+    total_mm = df_montos["total_miles_millones"].sum()
+
+    bar_montos = (
+        alt.Chart(df_montos)
+        .mark_bar(color="#2C7BB6")
+        .encode(
+            x=alt.X("year:O", title="Año", axis=alt.Axis(labelAngle=0)),
+            y=alt.Y("total_miles_millones:Q", title="Miles de millones de pesos (nominal)"),
+            tooltip=[
+                alt.Tooltip("year:O", title="Año"),
+                alt.Tooltip("contratos:Q", title="Licitaciones con monto"),
+                alt.Tooltip("total_miles_millones:Q", title="Miles de millones $", format=".1f"),
+            ],
+        )
+        .properties(height=320)
+    )
+    st.altair_chart(bar_montos, use_container_width=True)
+    st.caption(
+        f"Total registrado 2018–2026: **${total_mm:,.0f} miles de millones** en licitaciones públicas con monto publicado. "
+        "No incluye contrataciones directas ni licitaciones privadas."
     )
