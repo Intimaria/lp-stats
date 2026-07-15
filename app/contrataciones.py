@@ -64,23 +64,13 @@ La ley establece cuándo se requiere licitación pública, privada o concurso de
         .properties(height=400)
     )
 
-    anotaciones = agregar_anotaciones()
-    for a in anotaciones:
-        chart = chart + alt.Chart(
-            alt.Data(values=[{"year": str(a["year"]), "y": 0}])
-        ).mark_text(
-            text=f"← {a['texto']}",
-            align="left",
-            baseline="bottom",
-            dy=-5,
-            color="#333333",
-            fontSize=11,
-        ).encode(
-            x=alt.X("year:O"),
-            y=alt.value(10),
-        )
-
     st.altair_chart(chart, use_container_width=True)
+
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.info("**2022–2023:** pico de contrataciones al final de la gestión anterior.")
+    with col_b:
+        st.info("**Desde 2024:** la mayoría de los contratos son sin licitación (rojo).")
 
     st.caption(
         "**Sin clasificar:** contratos donde el boletín no publica suficiente texto "
