@@ -2,7 +2,7 @@
 name = "laplata-stats"
 version = "0.1.0"
 description = "Add your description here"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "altair>=6.2.2",
     "beautifulsoup4>=4.15.0",
