@@ -121,6 +121,24 @@ def get_inmuebles_ops(db_path: str) -> pd.DataFrame:
     return df
 
 
+def get_inmuebles_por_año_y_tipo(db_path: str) -> pd.DataFrame:
+    con = _connect(db_path)
+    df = con.execute("""
+        SELECT year, op AS operacion, COUNT(*) AS cantidad
+        FROM (
+            SELECT year, unnest(operations) AS op
+            FROM inmuebles WHERE len(operations) > 0
+            UNION ALL
+            SELECT year, 'Sin detalle publicado' AS op
+            FROM inmuebles WHERE len(operations) = 0
+        ) t
+        WHERE year IS NOT NULL
+        GROUP BY year, op ORDER BY year, cantidad DESC
+    """).df()
+    con.close()
+    return df
+
+
 def buscar(db_path: str, query: str, limit: int = 50) -> pd.DataFrame:
     if not query or not query.strip():
         return pd.DataFrame(columns=["tipo", "fecha", "doc_number",

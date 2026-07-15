@@ -1,88 +1,113 @@
 import streamlit as st
 import altair as alt
-from app.db import get_inmuebles_por_año, get_inmuebles_ops
+from app.db import get_inmuebles_por_año_y_tipo
 
 GLOSARIO = {
     "desafecta": (
-        "Saca un inmueble del uso público. Puede ser el paso previo "
-        "a una venta o cesión. No implica irregularidad, pero vale registrarlo."
+        "Saca el inmueble del catálogo de bienes públicos protegidos. "
+        "Es el paso previo a cualquier venta, cesión o cambio de uso. "
+        "Una desafectación no es una venta, pero habilita el camino."
     ),
     "cede": (
-        "Transfiere el uso del inmueble a un tercero: persona, organización o empresa. "
-        "El municipio sigue siendo propietario."
+        "Transfiere el uso a un tercero — persona, organización o empresa — "
+        "sin transferir la propiedad. El municipio sigue siendo dueño. "
+        "El boletín a veces no especifica quién recibe ni por cuánto tiempo."
     ),
     "escritura": (
-        "Formaliza una transferencia de dominio. El inmueble pasa legalmente "
-        "a manos de otra persona u organización."
+        "Formaliza la transferencia de dominio: el inmueble pasa legalmente "
+        "a manos de otro. Es la operación más difícil de revertir."
     ),
     "comodato": (
-        "Préstamo de uso gratuito por un plazo determinado. "
-        "El inmueble vuelve al municipio al vencimiento."
+        "Préstamo de uso gratuito por plazo determinado. "
+        "Al vencimiento, el inmueble vuelve al municipio."
     ),
     "donación": (
-        "El municipio dona el inmueble a un tercero. "
+        "El municipio cede la propiedad definitivamente. "
         "Requiere ordenanza del Concejo Deliberante."
     ),
-    "permuta": (
-        "Intercambio de un inmueble municipal por otro bien. "
-        "Requiere valuación fiscal previa."
+    "otorga": (
+        "Término genérico para una concesión o autorización de uso. "
+        "El alcance exacto depende del decreto."
     ),
+}
+
+COLORES = {
+    "Sin detalle publicado": "#BDBDBD",
+    "escritura":             "#D73027",
+    "donación":              "#FC8D59",
+    "desafecta":             "#FEE090",
+    "cede":                  "#74ADD1",
+    "comodato":              "#4DAC26",
+    "otorga":                "#91BFDB",
+    "adjudica":              "#A6D96A",
+    "permuta":               "#E0F3F8",
 }
 
 
 def render(db_path: str) -> None:
-    st.header("Tierra municipal — operaciones registradas")
+    st.header("Suelo público — ¿qué hace el municipio con sus inmuebles?")
     st.markdown("""
 El municipio puede ceder, escriturar, desafectar o transferir inmuebles mediante decreto.
-Cada operación debe publicarse en el boletín oficial.
-A continuación, el registro de **475 operaciones** entre 2018 y 2026.
+Cada operación debe publicarse en el boletín oficial. Entre 2018 y 2026 hay **475 registros**.
 """)
 
-    col1, col2 = st.columns(2)
+    st.warning(
+        "**El 89% de los registros no incluye el tipo de operación publicado en texto digital.** "
+        "El detalle figura en el anexo escaneado del decreto — no procesable sin OCR. "
+        "Lo que se muestra abajo es el registro de que *algo ocurrió*, no siempre *qué*."
+    )
 
-    with col1:
-        st.subheader("Operaciones por año")
-        df_año = get_inmuebles_por_año(db_path)
-        chart_año = (
-            alt.Chart(df_año)
-            .mark_bar(color="#4DAC26")
-            .encode(
-                x=alt.X("year:O", title="Año", axis=alt.Axis(labelAngle=0)),
-                y=alt.Y("cantidad:Q", title="Operaciones"),
-                tooltip=[
-                    alt.Tooltip("year:O", title="Año"),
-                    alt.Tooltip("cantidad:Q", title="Operaciones"),
-                ],
-            )
-            .properties(height=300)
-        )
-        st.altair_chart(chart_año, use_container_width=True)
+    df = get_inmuebles_por_año_y_tipo(db_path)
 
-    with col2:
-        st.subheader("Por tipo de operación")
-        df_ops = get_inmuebles_ops(db_path)
-        chart_ops = (
-            alt.Chart(df_ops)
-            .mark_bar(color="#4DAC26")
-            .encode(
-                x=alt.X("cantidad:Q", title="Cantidad"),
-                y=alt.Y("operacion:N", sort="-x", title=""),
-                tooltip=[
-                    alt.Tooltip("operacion:N", title="Operación"),
-                    alt.Tooltip("cantidad:Q", title="Cantidad"),
-                ],
-            )
-            .properties(height=300)
+    tipos = df["operacion"].unique().tolist()
+    orden = ["Sin detalle publicado"] + [t for t in GLOSARIO if t in tipos]
+    orden += [t for t in tipos if t not in orden]
+    colores_dom = [COLORES.get(t, "#CCCCCC") for t in orden]
+
+    chart = (
+        alt.Chart(df)
+        .mark_bar()
+        .encode(
+            x=alt.X("year:O", title="Año", axis=alt.Axis(labelAngle=0)),
+            y=alt.Y("cantidad:Q", title="Operaciones registradas", stack="zero"),
+            color=alt.Color(
+                "operacion:N",
+                scale=alt.Scale(domain=orden, range=colores_dom),
+                legend=alt.Legend(title="Tipo de operación"),
+            ),
+            order=alt.Order("operacion:N", sort="ascending"),
+            tooltip=[
+                alt.Tooltip("year:O", title="Año"),
+                alt.Tooltip("operacion:N", title="Tipo"),
+                alt.Tooltip("cantidad:Q", title="Cantidad"),
+            ],
         )
-        st.altair_chart(chart_ops, use_container_width=True)
+        .properties(height=360)
+    )
+    st.altair_chart(chart, use_container_width=True)
+
+    st.caption(
+        "Gris = registro sin tipo identificable. Rojo = escritura (transferencia de dominio). "
+        "Amarillo = desafectación (retiro de protección pública)."
+    )
 
     st.divider()
-    st.subheader("Glosario de términos")
-    st.caption(
-        "Estas operaciones no implican irregularidad. "
-        "El municipio puede legítimamente ceder o transferir inmuebles. "
-        "El valor está en que queden registradas y sean consultables."
-    )
+    st.subheader("Por qué importa")
+    st.markdown("""
+El suelo público es el activo municipal más valioso. Lo que el municipio hace con él
+determina qué servicios, espacios y oportunidades quedan en manos públicas.
+
+Una operación puede ser completamente legítima — una cesión a un comedor comunitario,
+una escritura para regularizar viviendas sociales, un comodato a una escuela.
+O puede no serlo. **El boletín registra que ocurrió. Rara vez dice quién se benefició.**
+
+La operación más sensible es la **desafectación**: saca un inmueble del catálogo de bienes
+protegidos y habilita su transferencia o cambio de uso. Si tu barrio perdió una plaza,
+un espacio verde o un edificio público, el decreto de desafectación estuvo antes.
+""")
+
+    st.divider()
+    st.subheader("Glosario")
     for termino, definicion in GLOSARIO.items():
         with st.expander(f"**{termino.capitalize()}**"):
             st.write(definicion)
