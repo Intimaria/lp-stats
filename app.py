@@ -28,6 +28,10 @@ with st.sidebar:
     seleccion = st.radio("", list(PANELES.keys()), label_visibility="collapsed")
     st.divider()
     st.caption("Fuente: SIBOM · sibom.slyt.gba.gob.ar")
+    st.caption(
+        "Visualización de datos abiertos del Municipio de La Plata y la Provincia de Buenos Aires. "
+        "Procesamiento automático: puede contener errores o estar incompleto. No es fuente oficial."
+    )
 
 panel = PANELES[seleccion]
 
