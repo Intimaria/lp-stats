@@ -13,3 +13,11 @@ dependencies = [
     "requests>=2.34.2",
     "streamlit>=1.59.2",
 ]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
