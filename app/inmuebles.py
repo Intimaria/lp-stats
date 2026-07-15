@@ -52,9 +52,10 @@ Cada operación debe publicarse en el boletín oficial. Entre 2018 y 2026 hay **
 """)
 
     st.warning(
-        "**El 89% de los registros no incluye el tipo de operación publicado en texto digital.** "
-        "El detalle figura en el anexo escaneado del decreto — no procesable sin OCR. "
-        "Lo que se muestra abajo es el registro de que *algo ocurrió*, no siempre *qué*."
+        "**El 89% de los registros está en páginas escaneadas del boletín.** "
+        "El municipio publicó el detalle, pero en formato imagen — aún no lo procesamos. "
+        "Lo que se muestra abajo es el registro de que *algo ocurrió*; el tipo de operación, "
+        "en la mayoría de los casos, está pendiente de extracción."
     )
 
     df = get_inmuebles_por_año_y_tipo(db_path)
