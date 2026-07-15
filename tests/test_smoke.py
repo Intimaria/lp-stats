@@ -24,9 +24,8 @@ def test_db_empresas_smoke():
 
 
 def test_db_inmuebles_smoke():
-    from app.db import get_inmuebles_por_año, get_inmuebles_ops
-    assert len(get_inmuebles_por_año(DB_PATH)) > 0
-    assert len(get_inmuebles_ops(DB_PATH)) > 0
+    from app.db import get_inmuebles_todos
+    assert len(get_inmuebles_todos(DB_PATH)) > 0
 
 
 def test_db_buscar_smoke():

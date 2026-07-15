@@ -1,0 +1,16 @@
+# Database (regenerated from JSONL via scraper/load_db.py)
+data/laplata.duckdb
+
+# Large scraped raw files (not needed to run the app)
+data/text/
+data/records.jsonl
+data/bulletins.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Local environment
+.python-version
+.direnv/

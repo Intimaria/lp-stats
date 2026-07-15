@@ -108,29 +108,6 @@ def get_inmuebles_resumen(db_path: str) -> dict:
     return {"total": int(row[0]), "pct_sin_tipo": round(row[1], 0)}
 
 
-def get_inmuebles_por_año(db_path: str) -> pd.DataFrame:
-    con = _connect(db_path)
-    df = con.execute("""
-        SELECT year, COUNT(*) AS cantidad
-        FROM inmuebles
-        WHERE year IS NOT NULL
-        GROUP BY year ORDER BY year
-    """).df()
-    con.close()
-    return df
-
-
-def get_inmuebles_ops(db_path: str) -> pd.DataFrame:
-    con = _connect(db_path)
-    df = con.execute("""
-        SELECT op AS operacion, COUNT(*) AS cantidad
-        FROM (SELECT unnest(operations) AS op FROM inmuebles) t
-        GROUP BY op ORDER BY cantidad DESC
-    """).df()
-    con.close()
-    return df
-
-
 def get_inmuebles_todos(db_path: str) -> pd.DataFrame:
     con = _connect(db_path)
     df = con.execute("""
@@ -140,21 +117,6 @@ def get_inmuebles_todos(db_path: str) -> pd.DataFrame:
                bulletin_id
         FROM inmuebles
         ORDER BY year DESC, doc_number
-    """).df()
-    con.close()
-    return df
-
-
-def get_inmuebles_con_beneficiario(db_path: str) -> pd.DataFrame:
-    con = _connect(db_path)
-    df = con.execute("""
-        SELECT year, doc_number,
-               array_to_string(operations, ', ') AS operacion,
-               beneficiario, direccion,
-               bulletin_id
-        FROM inmuebles
-        WHERE len(operations) > 0 AND beneficiario IS NOT NULL
-        ORDER BY year DESC
     """).df()
     con.close()
     return df

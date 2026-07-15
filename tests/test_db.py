@@ -5,8 +5,8 @@ from app.db import (
     get_stats_cabecera,
     get_contrataciones_por_año,
     get_empresas_stats,
-    get_inmuebles_por_año,
-    get_inmuebles_ops,
+    get_inmuebles_resumen,
+    get_inmuebles_todos,
     buscar,
 )
 
@@ -53,19 +53,18 @@ def test_empresas_stats_keys():
     assert isinstance(stats["top_empresas"], pd.DataFrame)
 
 
-def test_inmuebles_por_año_shape():
-    df = get_inmuebles_por_año(DB_PATH)
+def test_inmuebles_resumen():
+    r = get_inmuebles_resumen(DB_PATH)
+    assert r["total"] >= 154
+    assert 0 <= r["pct_sin_tipo"] <= 100
+
+
+def test_inmuebles_todos_shape():
+    df = get_inmuebles_todos(DB_PATH)
     assert isinstance(df, pd.DataFrame)
     assert "year" in df.columns
-    assert "cantidad" in df.columns
-    assert len(df) > 0
-
-
-def test_inmuebles_ops_shape():
-    df = get_inmuebles_ops(DB_PATH)
-    assert isinstance(df, pd.DataFrame)
     assert "operacion" in df.columns
-    assert "cantidad" in df.columns
+    assert len(df) >= 154
 
 
 def test_buscar_retorna_dataframe():
