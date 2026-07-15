@@ -4,6 +4,10 @@ from pathlib import Path
 
 DB_PATH = str(Path(__file__).parent / "data" / "laplata.duckdb")
 
+if not Path(DB_PATH).exists():
+    import scraper.load_db as _load_db
+    _load_db.main()
+
 st.set_page_config(
     page_title="Estadísticas platenses",
     page_icon="📋",

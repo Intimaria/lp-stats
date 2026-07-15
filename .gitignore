@@ -3,7 +3,6 @@ data/laplata.duckdb
 
 # Large scraped raw files (not needed to run the app)
 data/text/
-data/records.jsonl
 data/bulletins.json
 
 # Python
