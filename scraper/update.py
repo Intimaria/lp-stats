@@ -5,11 +5,17 @@ Designed to run daily in CI (GitHub Actions) or manually.
 
 import json
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
+
+# Ensure project root is on sys.path when run as a script or via -m
+_ROOT = Path(__file__).parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 from scraper.parse_bulletins import parse_bulletin
 from scraper.extract_deep import (

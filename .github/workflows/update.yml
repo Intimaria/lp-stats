@@ -24,7 +24,9 @@ jobs:
         run: uv sync --no-dev
 
       - name: Run incremental update
-        run: PYTHONPATH=. uv run python -m scraper.update
+        run: uv run python -m scraper.update
+        env:
+          PYTHONPATH: ${{ github.workspace }}
 
       - name: Check for changes
         id: changes
