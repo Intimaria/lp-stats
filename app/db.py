@@ -177,6 +177,53 @@ def get_inmuebles_por_año_y_tipo(db_path: str) -> pd.DataFrame:
     return df
 
 
+def buscar_empresa(db_path: str, query: str) -> dict | None:
+    """Returns structured empresa profile if query matches a known winner."""
+    if not query or len(query.strip()) < 3:
+        return None
+    con = _connect(db_path)
+    q = f"%{query.strip()}%"
+
+    row = con.execute("""
+        SELECT winner,
+               COUNT(*) AS contratos,
+               ROUND(SUM(awarded_amount) / 1e6, 0) AS total_millones,
+               MIN(year) AS primer_año,
+               MAX(year) AS ultimo_año
+        FROM adjudicaciones
+        WHERE winner ILIKE ?
+        GROUP BY winner
+        ORDER BY contratos DESC
+        LIMIT 1
+    """, [q]).fetchone()
+
+    if not row:
+        con.close()
+        return None
+
+    empresa, contratos, total_millones, primer_año, ultimo_año = row
+
+    df = con.execute("""
+        SELECT year, doc_number, contract_type, description,
+               awarded_amount, bulletin_id
+        FROM adjudicaciones
+        WHERE winner ILIKE ?
+        ORDER BY year DESC, doc_number
+    """, [q]).df()
+    con.close()
+
+    df["tipo_label"] = df["contract_type"].map(TIPO_LABELS).fillna("Otro")
+    df["url"] = df["bulletin_id"].apply(lambda bid: f"{SIBOM_BASE}/{bid}")
+    return {
+        "empresa": empresa,
+        "contratos": int(contratos),
+        "total_millones": int(total_millones) if total_millones else None,
+        "primer_año": int(primer_año) if primer_año else None,
+        "ultimo_año": int(ultimo_año) if ultimo_año else None,
+        "detalle": df,
+    }
+
+
 def buscar(db_path: str, query: str, limit: int = 50) -> pd.DataFrame:
     if not query or not query.strip():
         return pd.DataFrame(columns=["tipo", "fecha", "doc_number",
