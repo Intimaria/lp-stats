@@ -71,7 +71,7 @@ Esto incluye casi todos los contratos sin licitación.
 
     if len(top) > 0:
         top["años_activos"] = top["años"].apply(
-            lambda ys: " · ".join(str(y) for y in sorted(ys)) if ys else ""
+            lambda ys: " · ".join(str(y) for y in sorted(ys)) if ys is not None and len(ys) > 0 else ""
         )
 
         bar = (
