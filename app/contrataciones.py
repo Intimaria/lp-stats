@@ -1,7 +1,7 @@
 # app/contrataciones.py
 import altair as alt
 import streamlit as st
-from app.db import get_contrataciones_por_año, get_montos_por_año
+from app.db import get_contrataciones_por_año, get_montos_por_año, get_pct_directa_por_año
 
 COLORES = {
     "Licitación pública":   "#2C7BB6",
@@ -75,6 +75,58 @@ La ley establece cuándo se requiere licitación pública, privada o concurso de
     st.caption(
         "**Sin clasificar:** contratos donde el boletín no publica suficiente texto "
         "para identificar el tipo — el detalle está en el anexo escaneado del decreto."
+    )
+
+    st.divider()
+    st.subheader("El cambio de gestión en un número")
+
+    df_tend = get_pct_directa_por_año(db_path)
+    garro = df_tend[df_tend["year"].between(2019, 2023)]["pct_directa"].mean()
+    alak = df_tend[df_tend["year"] >= 2024]["pct_directa"].mean()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Gestión Garro (2019–2023)", f"{garro:.0f}%",
+                  help="Promedio anual de contratos adjudicados sin proceso licitatorio")
+        st.caption("Promedio de contratos sin licitación por año")
+    with col2:
+        st.metric("Gestión Alak (2024–hoy)", f"{alak:.0f}%",
+                  delta=f"+{alak - garro:.0f} puntos",
+                  delta_color="inverse",
+                  help="Promedio anual de contratos adjudicados sin proceso licitatorio")
+        st.caption("Promedio de contratos sin licitación por año")
+
+    line = (
+        alt.Chart(df_tend)
+        .mark_line(point=True, strokeWidth=2.5)
+        .encode(
+            x=alt.X("year:O", title="Año", axis=alt.Axis(labelAngle=0)),
+            y=alt.Y("pct_directa:Q", title="% sin licitación", scale=alt.Scale(domain=[0, 100])),
+            color=alt.condition(
+                alt.datum.year >= 2024,
+                alt.value("#D73027"),
+                alt.value("#74ADD1"),
+            ),
+            tooltip=[
+                alt.Tooltip("year:O", title="Año"),
+                alt.Tooltip("directas:Q", title="Sin licitación"),
+                alt.Tooltip("total:Q", title="Total contratos"),
+                alt.Tooltip("pct_directa:Q", title="% sin licitación", format=".1f"),
+            ],
+        )
+        .properties(height=300)
+    )
+
+    regla = (
+        alt.Chart(alt.Data(values=[{"year": "2024"}]))
+        .mark_rule(strokeDash=[6, 3], color="#888888")
+        .encode(x=alt.X("year:O"))
+    )
+
+    st.altair_chart(line + regla, use_container_width=True)
+    st.caption(
+        "La línea punteada marca el cambio de intendente (diciembre 2023). "
+        "2026 incluye solo los meses publicados hasta la fecha."
     )
 
     st.divider()

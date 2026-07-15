@@ -73,6 +73,24 @@ def get_contrataciones_por_año(db_path: str) -> pd.DataFrame:
     return df_long[["year", "tipo", "cantidad"]].copy()
 
 
+def get_pct_directa_por_año(db_path: str) -> pd.DataFrame:
+    con = _connect(db_path)
+    df = con.execute("""
+        SELECT year,
+               COUNT(*) AS total,
+               COUNT(*) FILTER (WHERE contract_type = 'contratacion_directa') AS directas,
+               ROUND(
+                   COUNT(*) FILTER (WHERE contract_type = 'contratacion_directa') * 100.0 / COUNT(*),
+                   1
+               ) AS pct_directa
+        FROM adjudicaciones
+        WHERE year IS NOT NULL AND year >= 2018
+        GROUP BY year ORDER BY year
+    """).df()
+    con.close()
+    return df
+
+
 def get_montos_por_año(db_path: str) -> pd.DataFrame:
     con = _connect(db_path)
     df = con.execute("""
