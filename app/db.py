@@ -131,6 +131,20 @@ def get_inmuebles_ops(db_path: str) -> pd.DataFrame:
     return df
 
 
+def get_inmuebles_todos(db_path: str) -> pd.DataFrame:
+    con = _connect(db_path)
+    df = con.execute("""
+        SELECT year, doc_number,
+               array_to_string(operations, ', ') AS operacion,
+               beneficiario, direccion,
+               bulletin_id
+        FROM inmuebles
+        ORDER BY year DESC, doc_number
+    """).df()
+    con.close()
+    return df
+
+
 def get_inmuebles_con_beneficiario(db_path: str) -> pd.DataFrame:
     con = _connect(db_path)
     df = con.execute("""

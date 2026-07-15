@@ -1,7 +1,7 @@
 import streamlit as st
 import altair as alt
 import pandas as pd
-from app.db import get_inmuebles_resumen, get_inmuebles_por_año_y_tipo, get_inmuebles_con_beneficiario
+from app.db import get_inmuebles_resumen, get_inmuebles_por_año_y_tipo, get_inmuebles_todos
 
 GLOSARIO = {
     "prescripción": (
@@ -106,26 +106,50 @@ Cada operación debe publicarse en el boletín oficial. Entre 2018 y 2026 hay **
     )
 
     st.divider()
-    st.subheader("Operaciones con beneficiario identificado")
+    st.subheader("Todos los registros")
     st.caption(
-        "Registros donde el sistema pudo extraer automáticamente el tipo de operación "
-        "y el receptor del inmueble. Dato aproximado — puede contener errores de extracción."
+        "Cada fila es una operación detectada en el boletín oficial. "
+        "Tipo vacío = el decreto menciona el inmueble pero no publicó el detalle de la operación. "
+        "Los datos de dirección y beneficiario son extraídos automáticamente — pueden tener errores."
     )
-    df_ben = get_inmuebles_con_beneficiario(db_path)
-    if len(df_ben) > 0:
-        SIBOM_BASE = "https://sibom.slyt.gba.gob.ar/bulletins"
-        df_ben["boletín"] = df_ben["bulletin_id"].apply(
-            lambda bid: f"[ver ↗]({SIBOM_BASE}/{bid})"
-        )
-        display = df_ben[["year", "operacion", "beneficiario", "direccion", "boletín"]].rename(columns={
-            "year": "Año", "operacion": "Operación",
-            "beneficiario": "Beneficiario", "direccion": "Dirección", "boletín": "Fuente",
-        })
-        st.dataframe(display, use_container_width=True, hide_index=True)
-    else:
-        st.caption("Sin datos disponibles.")
+
+    SIBOM_BASE = "https://sibom.slyt.gba.gob.ar/bulletins"
+    df_todos = get_inmuebles_todos(db_path)
+    df_todos["Fuente"] = df_todos["bulletin_id"].apply(lambda bid: f"{SIBOM_BASE}/{bid}")
+    display = df_todos[["year", "doc_number", "operacion", "direccion", "beneficiario", "Fuente"]].rename(columns={
+        "year": "Año", "doc_number": "Decreto/Ord.",
+        "operacion": "Tipo", "direccion": "Dirección", "beneficiario": "Beneficiario",
+    })
+    st.dataframe(
+        display,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Fuente": st.column_config.LinkColumn("Fuente", display_text="ver ↗"),
+        },
+    )
 
     st.divider()
+    with st.expander("¿Y los decretos sobre vehículos?"):
+        st.markdown("""
+El boletín también registra otro tipo de decretos que mencionan bienes en la vía pública.
+En los registros municipales hay dos categorías principales:
+
+**Indemnizaciones por daños a vehículos (~430 decretos)**
+Cuando un vehículo o infraestructura municipal daña un auto particular — un colectivo
+que choca, una zanja sin señalizar, un árbol que cae — el municipio tramita una
+indemnización. El decreto aprueba el pago y lo publica en el boletín.
+El municipio **paga** en estos casos.
+
+**Remoción de vehículos abandonados**
+El municipio contrata empresas para retirar autos abandonados o siniestrados de la vía pública.
+El propietario paga multa y estadía para recuperar el vehículo. En el período analizado
+aparecen contrataciones directas para este servicio.
+
+Estos registros no son operaciones sobre suelo público, por eso no aparecen en esta sección.
+Podés buscarlos en el buscador con las palabras "indemnización vehículo" o "remoción vehículos".
+""")
+
     st.subheader("Por qué importa")
     st.markdown("""
 El suelo público es el activo municipal más valioso. Lo que el municipio hace con él
