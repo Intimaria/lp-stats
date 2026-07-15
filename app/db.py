@@ -86,13 +86,12 @@ def get_empresas_stats(db_path: str) -> dict:
     top = con.execute("""
         SELECT winner AS empresa,
                COUNT(*) AS contratos,
-               MIN(year) AS primer_año,
-               MAX(year) AS ultimo_año
+               list(DISTINCT year ORDER BY year) AS años
         FROM adjudicaciones
         WHERE winner IS NOT NULL AND winner != ''
         GROUP BY winner
         ORDER BY contratos DESC
-        LIMIT 15
+        LIMIT 20
     """).df()
     con.close()
     return {"sin_empresa": sin_empresa, "total": total, "top_empresas": top}
