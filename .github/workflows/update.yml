@@ -1,0 +1,43 @@
+name: Daily data update
+
+on:
+  schedule:
+    - cron: '0 10 * * *'  # 10 AM UTC = 7 AM Argentina
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pdftotext
+        run: sudo apt-get install -y poppler-utils
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --no-dev
+
+      - name: Run incremental update
+        run: uv run python -m scraper.update
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet data/records.jsonl data/adjudicaciones.jsonl data/inmuebles.jsonl \
+            && echo "changed=false" >> $GITHUB_OUTPUT \
+            || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "laplata-stats-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/records.jsonl data/adjudicaciones.jsonl data/inmuebles.jsonl
+          git commit -m "data: automated update $(date +%Y-%m-%d)"
+          git push
