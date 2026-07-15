@@ -49,13 +49,13 @@ def render(db_path: str) -> None:
     st.header("Suelo público — ¿qué hace el municipio con sus inmuebles?")
     st.markdown("""
 El municipio puede ceder, escriturar, desafectar o transferir inmuebles mediante decreto.
-Cada operación debe publicarse en el boletín oficial. Entre 2018 y 2026 hay **475 registros**.
+Cada operación debe publicarse en el boletín oficial. Entre 2018 y 2026 hay **142 registros de operaciones sobre suelo público**.
 """)
 
     st.warning(
-        "**El 80% de los registros aún no tiene tipo de operación extraído.** "
+        "**El 13% de los registros aún no tiene tipo de operación extraído.** "
         "El municipio publicó el detalle en el boletín, pero en formatos que el sistema "
-        "aún no puede leer completamente. El trabajo de extracción continúa."
+        "aún no puede leer completamente."
     )
 
     df = get_inmuebles_por_año_y_tipo(db_path)

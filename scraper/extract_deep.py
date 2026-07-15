@@ -119,16 +119,27 @@ DOC_DATE_RE = re.compile(
 # ── Inmueble patterns ─────────────────────────────────────────────────────────
 
 INMUEBLE_RE = re.compile(r"\binmueble\b|\bparcela\b|\bterreno\b|\bdominio\b", re.I)
+
+# A block must match at least one of these to be kept as an inmueble record
+INMUEBLE_STRONG_RE = re.compile(
+    r"uso\s+precario|transferencia\s+de\s+dominio|escritura\s+traslativa"
+    r"|bien\s+inmueble|inmueble\s+municipal|inmueble\s+(?:fiscal|del\s+estado)"
+    r"|[Cc]at[aá]logo\s+de\s+[Bb]ienes|espacio\s+verde"
+    r"|[Bb]ien(?:es)?\s+(?:del\s+municipio|municipales?|fiscales?)"
+    r"|[Cc]ircunscripci[oó]n\s+[IVXL\d]",
+    re.I,
+)
+
 INMUEBLE_OP_RE = re.compile(
-    r"\b(desafectaci[oó]n|desafect[aá](?:se|ndo)?|desafecta"
-    r"|cesi[oó]n(?:\s+de\s+uso)?|cedido|cede"
-    r"|escritura\s+traslativa|escritura[rs]?|escriturar|escrituraci[oó]n"
+    r"\b(desafectaci[oó]n|desaf[eé]ct[aáeé](?:se?|ndo|n(?:se)?)?|desafecta"
+    r"|cesi[oó]n(?:\s+de\s+uso)?|cedido|cede|c[eé]d[ao]se?"
+    r"|escritura\s+traslativa|escritura[rs]?|escriturar|escrituraci[oó]n|escritúrese?"
     r"|comodato"
     r"|donaci[oó]n|dona\b"
     r"|permuta"
     r"|adjudicaci[oó]n|adjudica"
-    r"|transferencia(?:\s+de\s+dominio)?|transfiere"
-    r"|otorg(?:a(?:se|miento|ndo)?|amiento))\b",
+    r"|transferencia(?:\s+de\s+dominio)?|transfi[eé]r[ae]se?"
+    r"|otorg(?:a(?:se?|miento|ndo)?|amiento|[uú]ese?))\b",
     re.I,
 )
 
@@ -321,6 +332,10 @@ def extract_inmueble_doc(block, bulletin_meta):
             direccion += f" Nº {numero}"
         if entre:
             direccion += f" e/ {entre}"
+
+    # Drop records where "inmueble" appears only in passing (vehicle damage, parking, etc.)
+    if not ops and not circ and not INMUEBLE_STRONG_RE.search(block):
+        return None
 
     return {
         "bulletin_id":     bulletin_meta["bulletin_id"],
