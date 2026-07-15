@@ -24,7 +24,7 @@ jobs:
         run: uv sync --no-dev
 
       - name: Run incremental update
-        run: uv run python -m scraper.update
+        run: PYTHONPATH=. uv run python -m scraper.update
 
       - name: Check for changes
         id: changes
