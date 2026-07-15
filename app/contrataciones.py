@@ -179,7 +179,7 @@ La ley establece cuándo se requiere licitación pública, privada o concurso de
         st.caption(
             f"Total en pesos constantes de {ref_year}: **${total_real:,.0f} miles de millones** "
             f"(equivalente nominal: ${total_nominal:,.0f} MM). "
-            "Deflactado con IPC INDEC (base dic 2016). "
+            "Deflactado con IPC INDEC. "
             "2019 concentra el mayor volumen real, con contratos individuales de mayor escala. "
             "2020 refleja la caída por pandemia. "
             "El gráfico excluye contrataciones directas, que en 2024–2026 representan la mayoría "
