@@ -12,26 +12,15 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
-_HERE = Path(__file__).parent
-_ROOT = _HERE.parent
-for _p in (str(_ROOT), str(_HERE)):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+_HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(_HERE))
 
-try:
-    from scraper.parse_bulletins import parse_bulletin
-    from scraper.extract_deep import (
-        extract_adjudicacion_doc,
-        extract_inmueble_doc,
-        split_text_into_docs,
-    )
-except ImportError:
-    from parse_bulletins import parse_bulletin  # type: ignore
-    from extract_deep import (  # type: ignore
-        extract_adjudicacion_doc,
-        extract_inmueble_doc,
-        split_text_into_docs,
-    )
+from parse_bulletins import parse_bulletin
+from extract_deep import (
+    extract_adjudicacion_doc,
+    extract_inmueble_doc,
+    split_text_into_docs,
+)
 
 BASE_URL = "https://sibom.slyt.gba.gob.ar"
 CITY_ID = 66
