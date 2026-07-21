@@ -22,6 +22,15 @@ from extract_deep import (
     split_text_into_docs,
 )
 
+def _ensure_newline(f):
+    """Guarantee the file ends with a newline before appending."""
+    pos = f.seek(0, 2)
+    if pos > 0:
+        f.seek(pos - 1)
+        if f.read(1) != "\n":
+            f.write("\n")
+
+
 BASE_URL = "https://sibom.slyt.gba.gob.ar"
 CITY_ID = 66
 HEADERS = {"User-Agent": "laplata-stats/0.1 civic-research (inti.tidball@mikroways.net)"}
@@ -167,18 +176,21 @@ def main():
 
     if new_records:
         with open(RECORDS_FILE, "a", encoding="utf-8") as f:
+            _ensure_newline(f)
             for r in new_records:
                 f.write(json.dumps(r, ensure_ascii=False) + "\n")
         print(f"\nAppended {len(new_records)} records → {RECORDS_FILE}")
 
     if new_adj:
         with open(ADJ_FILE, "a", encoding="utf-8") as f:
+            _ensure_newline(f)
             for a in new_adj:
                 f.write(json.dumps(a, ensure_ascii=False) + "\n")
         print(f"Appended {len(new_adj)} adjudicaciones")
 
     if new_imm:
         with open(IMM_FILE, "a", encoding="utf-8") as f:
+            _ensure_newline(f)
             for i in new_imm:
                 f.write(json.dumps(i, ensure_ascii=False) + "\n")
         print(f"Appended {len(new_imm)} inmuebles")
