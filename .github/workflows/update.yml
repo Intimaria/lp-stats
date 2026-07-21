@@ -21,7 +21,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run incremental update
-        run: python scraper/update.py
+        run: python scraper/update.py || echo "Scraper failed (SIBOM may be unavailable), skipping"
 
       - name: Check for changes
         id: changes

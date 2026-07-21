@@ -41,11 +41,20 @@ def get_known_ids():
     return known
 
 
-def fetch_page(url):
-    time.sleep(1.5)
-    r = requests.get(url, headers=HEADERS, timeout=30)
-    r.raise_for_status()
-    return BeautifulSoup(r.text, "lxml")
+def fetch_page(url, retries=3):
+    for attempt in range(retries):
+        time.sleep(1.5 + attempt * 2)
+        try:
+            r = requests.get(url, headers=HEADERS, timeout=45)
+            r.raise_for_status()
+            return BeautifulSoup(r.text, "lxml")
+        except requests.exceptions.Timeout:
+            if attempt < retries - 1:
+                print(f"  Timeout (intento {attempt + 1}/{retries}), reintentando...")
+            else:
+                raise
+        except requests.exceptions.RequestException:
+            raise
 
 
 def fetch_recent_bulletins(known_ids, max_pages=10):

@@ -4,7 +4,21 @@ from pathlib import Path
 
 DB_PATH = str(Path(__file__).parent / "data" / "laplata.duckdb")
 
-if not Path(DB_PATH).exists():
+
+def _db_ready(path: str) -> bool:
+    if not Path(path).exists():
+        return False
+    try:
+        import duckdb
+        con = duckdb.connect(path, read_only=True)
+        tables = {r[0] for r in con.execute("SHOW TABLES").fetchall()}
+        con.close()
+        return {"adjudicaciones", "inmuebles", "records"}.issubset(tables)
+    except Exception:
+        return False
+
+
+if not _db_ready(DB_PATH):
     import scraper.load_db as _load_db
     _load_db.main()
 
